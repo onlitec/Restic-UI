@@ -1,0 +1,180 @@
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.schedules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.schedule-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
+    transition: all var(--transition-normal);
+}
+
+.schedule-card:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.schedule-card.disabled {
+    opacity: 0.6;
+}
+
+.schedule-main {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.schedule-toggle {
+    flex-shrink: 0;
+}
+
+.toggle-btn {
+    padding: 0.25rem;
+}
+
+.toggle-on {
+    color: var(--success);
+}
+
+.toggle-off {
+    color: var(--text-muted);
+}
+
+.schedule-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.schedule-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.schedule-job {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.schedule-cron {
+    font-size: 0.813rem;
+    padding: 0.25rem 0.625rem;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    color: var(--accent-primary);
+}
+
+.schedule-description {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.schedule-times {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.time-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.813rem;
+}
+
+.time-label {
+    color: var(--text-muted);
+}
+
+.time-value {
+    color: var(--text-secondary);
+}
+
+.time-value.highlight {
+    color: var(--accent-primary);
+    font-weight: 500;
+}
+
+.schedule-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.empty-card {
+    padding: 3rem;
+}
+
+.empty-card .empty-state h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.empty-card .empty-state .btn {
+    margin-top: 1rem;
+}
+
+/* Cron presets */
+.cron-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.preset-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.preset-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+
+.preset-btn.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+@media (max-width: 768px) {
+    .schedule-main {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .schedule-actions {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border-color);
+    }
+}

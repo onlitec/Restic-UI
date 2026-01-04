@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  # Backend API
+  restic-ui-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: restic-ui-backend
+    restart: unless-stopped
+    ports:
+      - "3500:3500"
+    environment:
+      - NODE_ENV=production
+      - PORT=3500
+      - DATABASE_URL=postgresql://restic:${DB_PASSWORD}@restic-ui-db:5432/restic_ui
+      - JWT_SECRET=${JWT_SECRET}
+      - RESTIC_PASSWORD=${RESTIC_PASSWORD}
+      - RESTIC_REPOSITORY=/repo
+    volumes:
+      - /backup/pbs:/repo
+      - /var/lib/docker/volumes:/volumes:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./scripts:/scripts:ro
+    depends_on:
+      restic-ui-db:
+        condition: service_healthy
+    networks:
+      - restic-ui-network
+
+  # Frontend React
+  restic-ui-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: restic-ui-frontend
+    restart: unless-stopped
+    ports:
+      - "3501:80"
+    depends_on:
+      - restic-ui-backend
+    networks:
+      - restic-ui-network
+
+  # PostgreSQL Database
+  restic-ui-db:
+    image: postgres:15-alpine
+    container_name: restic-ui-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=restic
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=restic_ui
+    volumes:
+      - restic_ui_pgdata:/var/lib/postgresql/data
+      - ./backend/src/config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U restic -d restic_ui" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - restic-ui-network
+
+volumes:
+  restic_ui_pgdata:
+
+
+networks:
+  restic-ui-network:
+    driver: bridge
