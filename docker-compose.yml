@@ -20,6 +20,7 @@ services:
     volumes:
       - /backup/pbs:/repo
       - /var/lib/docker/volumes:/volumes:ro
+      - /home/alfreire/docker/apps:/apps:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - ./scripts:/scripts:ro
     depends_on:

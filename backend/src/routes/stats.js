@@ -18,6 +18,7 @@ function getDiskUsage(path = '/repo') {
 
     // POSIX format: Filesystem 1-blocks Used Available Capacity Mounted
     if (parts.length >= 5) {
+      const filesystem = parts[0];
       const total = parseInt(parts[1]) || 0;
       const used = parseInt(parts[2]) || 0;
       const available = parseInt(parts[3]) || 0;
@@ -25,6 +26,7 @@ function getDiskUsage(path = '/repo') {
       const mountPoint = parts[5] || path;
 
       return {
+        filesystem,
         total,
         used,
         available,

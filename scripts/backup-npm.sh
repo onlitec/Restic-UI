@@ -5,12 +5,15 @@ APP_NAME="npm"
 
 echo "=== Backup $APP_NAME ==="
 
+# Remove stale locks before backup
+restic unlock --remove-all 2>/dev/null || true
+
 restic snapshots --tag $APP_NAME >/dev/null 2>&1 || restic init
 
 restic backup \
-  /var/lib/docker/volumes/npm_data \
-  /var/lib/docker/volumes/npm_letsencrypt \
-  --hostname portainer-host \
+  /volumes/npm_data/_data \
+  /volumes/npm_letsencrypt/_data \
+  --host portainer-host \
   --tag $APP_NAME \
   --verbose
 

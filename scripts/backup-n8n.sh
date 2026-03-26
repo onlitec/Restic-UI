@@ -5,11 +5,14 @@ APP_NAME="n8n"
 
 echo "=== Backup $APP_NAME ==="
 
+# Remove stale locks before backup
+restic unlock --remove-all 2>/dev/null || true
+
 restic snapshots --tag $APP_NAME >/dev/null 2>&1 || restic init
 
 restic backup \
-  /var/lib/docker/volumes/n8n_n8n_data \
-  --hostname portainer-host \
+  /volumes/n8n_n8n_data/_data \
+  --host portainer-host \
   --tag $APP_NAME \
   --verbose
 

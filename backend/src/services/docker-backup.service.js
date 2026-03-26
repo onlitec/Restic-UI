@@ -1,6 +1,9 @@
 const Docker = require('dockerode');
 const path = require('path');
 const db = require('../config/database');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const execAsync = promisify(exec);
 
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
@@ -18,10 +21,39 @@ function sanitizeLog(log) {
 
 class DockerBackupService {
     /**
+     * Check if repository is accessible (detect NFS hangs)
+     */
+    async checkRepository() {
+        try {
+            // Use a short timeout to detect hangs
+            await execAsync('ls -d /repo', { timeout: 2000 });
+            return true;
+        } catch (error) {
+            console.error('⚠️ Repository /repo is not accessible (possible NFS hang):', error.message);
+            return false;
+        }
+    }
+
+    /**
      * Run a backup job by executing its container
      */
     async runBackup(jobName, broadcast = null) {
         console.log(`🚀 Starting backup job: ${jobName}`);
+
+        // Check if repository is responsive
+        const isAccessible = await this.checkRepository();
+        if (!isAccessible) {
+            const errorMsg = 'Backup repository is currently inaccessible (NFS mount hung)';
+            console.error(`❌ ${errorMsg}`);
+            
+            if (broadcast) {
+                broadcast('backup_failed', { 
+                    jobName, 
+                    error: errorMsg 
+                });
+            }
+            throw new Error(errorMsg);
+        }
 
         // Get job configuration
         const jobResult = await db.query(
@@ -48,6 +80,9 @@ class DockerBackupService {
         }
 
         try {
+            // Ensure restic image exists
+            await this.ensureImageExists();
+
             // Create and run container
             // Note: restic/restic image has ENTRYPOINT ["restic"], we need to override it
             const container = await docker.createContainer({
@@ -206,6 +241,34 @@ class DockerBackupService {
             status: c.Status,
             created: c.Created
         }));
+    }
+
+    /**
+     * Ensure restic image exists, pull it if not
+     */
+    async ensureImageExists() {
+        try {
+            const images = (await docker.listImages().catch(() => [])) || [];
+            const exists = images.some(img => 
+                img.RepoTags && img.RepoTags.includes('restic/restic:latest')
+            );
+
+            if (!exists) {
+                console.log('📦 Image restic/restic:latest not found, pulling...');
+                await new Promise((resolve, reject) => {
+                    docker.pull('restic/restic:latest', (err, stream) => {
+                        if (err) return reject(err);
+                        docker.modem.followProgress(stream, (err, res) => {
+                            if (err) return reject(err);
+                            resolve(res);
+                        });
+                    });
+                });
+                console.log('✅ Image restic/restic:latest pulled successfully');
+            }
+        } catch (error) {
+            console.error('⚠️ Could not check or pull restic image (non-fatal):', error.message);
+        }
     }
 }
 

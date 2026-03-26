@@ -1,6 +1,5 @@
 #!/bin/sh
 # Backup de todas as aplicações (master script)
-set -e
 
 SCRIPTS_DIR="/scripts"
 

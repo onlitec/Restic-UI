@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useWebSocket } from '../context/WebSocketContext';
 import './Jobs.css';
 
 function formatBytes(bytes) {
@@ -44,6 +45,27 @@ function Jobs() {
     const [history, setHistory] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const { isOperator } = useAuth();
+    const { messages } = useWebSocket();
+
+    // Handle WebSocket messages
+    useEffect(() => {
+        const lastMessage = messages[messages.length - 1];
+        if (!lastMessage) return;
+
+        const { type, data } = lastMessage;
+
+        if (type === 'backup_started') {
+            setRunningJobs(prev => new Set([...prev, data.jobName]));
+            fetchJobs(); // Update general job state
+        } else if (type === 'backup_completed' || type === 'backup_failed' || type === 'backup_stopped') {
+            setRunningJobs(prev => {
+                const next = new Set(prev);
+                next.delete(data.jobName);
+                return next;
+            });
+            fetchJobs(); // Update general job state to show success/fail
+        }
+    }, [messages]);
 
     const fetchJobs = async () => {
         try {
@@ -64,17 +86,10 @@ function Jobs() {
 
     const runBackup = async (jobName) => {
         try {
+            // Optimistic start, but the WebSocket will confirm
             setRunningJobs(prev => new Set([...prev, jobName]));
             await api.post(`/jobs/${jobName}/run`);
-            // In a real app, we would connect to WebSocket for updates
-            setTimeout(() => {
-                setRunningJobs(prev => {
-                    const next = new Set(prev);
-                    next.delete(jobName);
-                    return next;
-                });
-                fetchJobs();
-            }, 5000);
+            // WebSocket will handle the rest of the flow
         } catch (err) {
             alert('Erro ao iniciar backup: ' + err.message);
             setRunningJobs(prev => {

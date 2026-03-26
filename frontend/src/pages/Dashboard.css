@@ -66,19 +66,36 @@
 .disk-usage-header {
     display: flex;
     align-items: center;
-    gap: 0.625rem;
-    margin-bottom: 1rem;
-    font-weight: 500;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
 }
 
-.disk-mount {
-    margin-left: auto;
+.disk-usage-title {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.disk-usage-path {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: 0.813rem;
     color: var(--text-muted);
-    font-family: monospace;
+    font-family: var(--font-mono);
     background: var(--bg-tertiary);
-    padding: 0.25rem 0.625rem;
-    border-radius: 4px;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--glass-border);
+}
+
+.disk-usage-path strong {
+    color: var(--accent-primary);
 }
 
 .disk-usage-bar-container {

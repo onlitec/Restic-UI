@@ -7,11 +7,13 @@ import {
     XCircle,
     AlertTriangle,
     HardDrive,
+    Server,
     TrendingUp,
     RefreshCw
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import api from '../services/api';
+import { useWebSocket } from '../context/WebSocketContext';
 import './Dashboard.css';
 
 function formatBytes(bytes) {
@@ -31,6 +33,7 @@ function Dashboard() {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { messages } = useWebSocket();
 
     const fetchStats = async () => {
         try {
@@ -47,10 +50,22 @@ function Dashboard() {
 
     useEffect(() => {
         fetchStats();
-        // Refresh every 30 seconds
-        const interval = setInterval(fetchStats, 30000);
+        // Refresh every 5 minutes (more passive since WS handles changes)
+        const interval = setInterval(fetchStats, 300000);
         return () => clearInterval(interval);
     }, []);
+
+    // Handle WebSocket messages
+    useEffect(() => {
+        const lastMessage = messages[messages.length - 1];
+        if (!lastMessage) return;
+
+        const { type } = lastMessage;
+        // Refresh stats on any relevant event
+        if (['backup_completed', 'backup_failed', 'backup_stopped', 'snapshot_deleted'].includes(type)) {
+            fetchStats();
+        }
+    }, [messages]);
 
     if (loading && !stats) {
         return (
@@ -134,9 +149,14 @@ function Dashboard() {
             {stats?.diskUsage && !stats.diskUsage.error && (
                 <div className="disk-usage-card">
                     <div className="disk-usage-header">
-                        <HardDrive size={20} />
-                        <span>Espaço em Disco - Destino de Backup</span>
-                        <span className="disk-mount">{stats.diskUsage.mountPoint}</span>
+                        <div className="disk-usage-title">
+                            <Server size={20} />
+                            <span>Servidor: <strong>{stats.diskUsage.filesystem}</strong></span>
+                        </div>
+                        <div className="disk-usage-path">
+                            <HardDrive size={16} />
+                            <span>Repo: <strong>{repository.repository || '/repo'}</strong></span>
+                        </div>
                     </div>
                     <div className="disk-usage-bar-container">
                         <div className="disk-usage-bar">

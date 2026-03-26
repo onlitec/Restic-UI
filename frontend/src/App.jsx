@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { WebSocketProvider } from './context/WebSocketContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -35,20 +36,22 @@ function App() {
     return (
         <BrowserRouter>
             <AuthProvider>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/" element={
-                        <ProtectedRoute>
-                            <Layout />
-                        </ProtectedRoute>
-                    }>
-                        <Route index element={<Dashboard />} />
-                        <Route path="snapshots" element={<Snapshots />} />
-                        <Route path="jobs" element={<Jobs />} />
-                        <Route path="schedules" element={<Schedules />} />
-                        <Route path="users" element={<Users />} />
-                    </Route>
-                </Routes>
+                <WebSocketProvider>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/" element={
+                            <ProtectedRoute>
+                                <Layout />
+                            </ProtectedRoute>
+                        }>
+                            <Route index element={<Dashboard />} />
+                            <Route path="snapshots" element={<Snapshots />} />
+                            <Route path="jobs" element={<Jobs />} />
+                            <Route path="schedules" element={<Schedules />} />
+                            <Route path="users" element={<Users />} />
+                        </Route>
+                    </Routes>
+                </WebSocketProvider>
             </AuthProvider>
         </BrowserRouter>
     );

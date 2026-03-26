@@ -5,15 +5,18 @@ APP_NAME="monitoring"
 
 echo "=== Backup $APP_NAME ==="
 
+# Remove stale locks before backup
+restic unlock --remove-all 2>/dev/null || true
+
 restic snapshots --tag $APP_NAME >/dev/null 2>&1 || restic init
 
 restic backup \
-  /var/lib/docker/volumes/monitoramento_prometheus_data \
-  /var/lib/docker/volumes/monitoramento_grafana_data \
-  /var/lib/docker/volumes/monitoramento_loki_data \
-  /var/lib/docker/volumes/monitoramento_alertmanager_data \
-  /var/lib/docker/volumes/grafana_data \
-  --hostname portainer-host \
+  /volumes/monitoramento_prometheus_data/_data \
+  /volumes/monitoramento_grafana_data/_data \
+  /volumes/monitoramento_loki_data/_data \
+  /volumes/monitoramento_alertmanager_data/_data \
+  /volumes/grafana_data/_data \
+  --host portainer-host \
   --tag $APP_NAME \
   --verbose
 

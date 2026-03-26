@@ -1,5 +1,7 @@
-const { execSync, spawn } = require('child_process');
+const { exec } = require('child_process');
 const path = require('path');
+const { promisify } = require('util');
+const execAsync = promisify(require('child_process').exec);
 
 class ResticService {
     constructor() {
@@ -11,21 +13,40 @@ class ResticService {
     }
 
     /**
+     * Check if repository is accessible (detect NFS hangs)
+     */
+    async checkRepository() {
+        try {
+            // Use a short timeout to detect hangs
+            await execAsync('ls -d /repo', { timeout: 2000 });
+            return true;
+        } catch (error) {
+            console.error('⚠️ Repository /repo is not accessible (possible NFS hang):', error.message);
+            return false;
+        }
+    }
+
+    /**
      * Execute a restic command and return JSON output
      */
-    execRestic(args, options = {}) {
+    async execRestic(args, options = {}) {
+        const isAccessible = await this.checkRepository();
+        if (!isAccessible) {
+            throw new Error('Repository is currently inaccessible (NFS mount might be hung)');
+        }
+
         try {
             const cmd = `restic ${args.join(' ')} --json`;
             console.log(`🔧 Executing: ${cmd}`);
 
-            const output = execSync(cmd, {
+            const { stdout } = await execAsync(cmd, {
                 env: this.env,
                 encoding: 'utf-8',
                 timeout: options.timeout || 60000,
                 ...options
             });
 
-            return JSON.parse(output);
+            return JSON.parse(stdout);
         } catch (error) {
             // Check if there's still valid JSON output
             if (error.stdout) {
@@ -40,17 +61,24 @@ class ResticService {
     /**
      * Execute restic command and return raw output
      */
-    execResticRaw(args, options = {}) {
+    async execResticRaw(args, options = {}) {
+        const isAccessible = await this.checkRepository();
+        if (!isAccessible) {
+            throw new Error('Repository is currently inaccessible (NFS mount might be hung)');
+        }
+
         try {
             const cmd = `restic ${args.join(' ')}`;
             console.log(`🔧 Executing: ${cmd}`);
 
-            return execSync(cmd, {
+            const { stdout } = await execAsync(cmd, {
                 env: this.env,
                 encoding: 'utf-8',
                 timeout: options.timeout || 60000,
                 ...options
             });
+
+            return stdout;
         } catch (error) {
             throw new Error(`Restic command failed: ${error.message}`);
         }
@@ -71,7 +99,7 @@ class ResticService {
      * Get a specific snapshot by ID
      */
     async getSnapshot(id) {
-        const snapshots = this.execRestic(['snapshots', id]);
+        const snapshots = await this.execRestic(['snapshots', id]);
         return snapshots[0] || null;
     }
 
@@ -84,7 +112,7 @@ class ResticService {
             args.push(path);
         }
 
-        const output = this.execResticRaw(['ls', id, '--json']);
+        const output = await this.execResticRaw(['ls', id, '--json']);
         const files = output.trim().split('\n')
             .filter(line => line)
             .map(line => JSON.parse(line));
@@ -104,10 +132,22 @@ class ResticService {
      */
     async getRepoInfo() {
         try {
+            const isAccessible = await this.checkRepository();
+            if (!isAccessible) {
+                return {
+                    totalSnapshots: 0,
+                    totalSize: 0,
+                    totalFileCount: 0,
+                    snapshotsByTag: {},
+                    error: 'Repository inaccessible (NFS mount hung)'
+                };
+            }
+
             const stats = await this.getStats();
             const snapshots = await this.getSnapshots();
 
             return {
+                repository: this.env.RESTIC_REPOSITORY,
                 totalSnapshots: snapshots.length,
                 totalSize: stats.total_size,
                 totalFileCount: stats.total_file_count,
@@ -174,7 +214,7 @@ class ResticService {
      * Get diff between two snapshots
      */
     async diff(snapshot1, snapshot2) {
-        const output = this.execResticRaw(['diff', snapshot1, snapshot2, '--json']);
+        const output = await this.execResticRaw(['diff', snapshot1, snapshot2, '--json']);
         const changes = output.trim().split('\n')
             .filter(line => line)
             .map(line => JSON.parse(line));
